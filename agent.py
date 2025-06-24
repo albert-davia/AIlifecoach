@@ -9,9 +9,12 @@ from langgraph.prebuilt import tools_condition, ToolNode, InjectedState
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from langgraph.graph import MessagesState
+from davia import Davia
 import operator
 
 load_dotenv()
+
+app = Davia()
 
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
 
@@ -162,16 +165,20 @@ def assistant(state: LifeCoachState):
     return {"messages": [response]}
 
 # --- GRAPH ---
+@app.graph
+def graph():
+    builder = StateGraph(LifeCoachState)
+    builder.add_node("assistant", assistant)
+    builder.add_node("tools", ToolNode(TOOLS))
+    builder.add_edge(START, "assistant")
+    builder.add_conditional_edges(
+        "assistant",
+        tools_condition,
+    )
+    builder.add_edge("tools", "assistant")
+    return builder.compile()
 
-builder = StateGraph(LifeCoachState)
-builder.add_node("assistant", assistant)
-builder.add_node("tools", ToolNode(TOOLS))
-builder.add_edge(START, "assistant")
-builder.add_conditional_edges(
-    "assistant",
-    tools_condition,
-)
-builder.add_edge("tools", "assistant")
-graph = builder.compile()
 
+if __name__ == "__main__":
+    app.run()
 
