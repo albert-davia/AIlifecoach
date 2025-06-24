@@ -88,14 +88,14 @@ def clear_tomorrows_schedule(
     })
 
 @tool
-def update_tomorrows_schedule(
+def add_one_event_to_tomorrows_schedule(
     activity: str,
     start_time: int,
     end_time: int,
     state: Annotated[LifeCoachState, InjectedState],
     tool_call_id: Annotated[str, InjectedToolCallId] = ""
 ) -> Command:
-    """Update tomorrow's schedule with the new schedule items."""
+    """Update tomorrow's schedule with the new schedule items. for the time format, use the military time format (0000-2359)."""
     current_schedule = state.get("tomorrows_schedule", [])
     current_schedule.append(ScheduleItem(activity=activity, start_time=start_time, end_time=end_time))
     return Command(update={
@@ -109,7 +109,7 @@ def update_tomorrows_schedule(
     })
 
 # Liste des tools pour ToolNode
-TOOLS = [remove_completed_tasks, create_new_task, update_tomorrows_schedule, clear_tomorrows_schedule]
+TOOLS = [remove_completed_tasks, create_new_task, add_one_event_to_tomorrows_schedule, clear_tomorrows_schedule]
 
 
 llm_with_tools = llm.bind_tools(TOOLS)
@@ -177,6 +177,7 @@ def graph():
     )
     builder.add_edge("tools", "assistant")
     return builder.compile()
+
 
 
 if __name__ == "__main__":
