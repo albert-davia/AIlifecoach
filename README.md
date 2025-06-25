@@ -1,178 +1,82 @@
-# AI Life Coach - LangGraph Agent
+# AI Life Coach
 
-An artificial intelligence agent for life coaching, built with LangGraph and LangChain.
+An intelligent life coaching agent that helps you manage your daily tasks and schedule. Built with LangGraph and Davia.
 
-## 🚀 Quick Setup
+## What it does
 
-### 1. Activate the virtual environment
+The AI Life Coach conducts daily check-ins to help you:
+- Review completed tasks from your day
+- Add new tasks to your schedule
+- Organize your schedule intelligently with conflict-free time slots
+- Use military time format (0000-2359) for precise scheduling
+
+The agent automatically:
+- Avoids scheduling conflicts
+- Estimates task duration when only start time is provided
+- Works around your specified time constraints
+- Prioritizes urgent tasks
+
+## Quick Start
+
+### Prerequisites
+
+- Python 3.9 or higher
+- OpenAI API key
+
+### 1. Install dependencies
+
 ```bash
-# Option 1: Use the helper script
-./activate_env.sh
-
-# Option 2: Manual activation
-source venv/bin/activate
+pip install -r requirements.txt
 ```
 
-### 2. Verify installation
-```bash
-# Test Python imports
-python -c "import agent; print('✅ All imports successful!')"
-
-# Check LangGraph CLI
-langgraph --help
-```
-
-## 🔧 Using LangGraph CLI
-
-### Development server
-```bash
-# Start the development server
-langgraph dev --config langgraph.json --port 8123 --no-browser
-
-# Access the web interface
-open http://localhost:8123/docs
-```
-
-### Other CLI commands
-```bash
-# Create a new project
-langgraph new my-project --template new-langgraph-project-python
-
-# Build a Docker image
-langgraph build --config langgraph.json
-
-# Generate a Dockerfile
-langgraph dockerfile --config langgraph.json
-
-# Deploy to production
-langgraph up --config langgraph.json
-```
-
-## 📁 Project Structure
-
-```
-AIlifecoach/
-├── venv/                    # Python virtual environment
-├── agent.py                 # Main life coaching agent
-├── requirements.txt         # Python dependencies
-├── langgraph.json          # LangGraph CLI configuration
-├── activate_env.sh         # Environment activation script
-└── README.md               # This file
-```
-
-## 🐍 Python Usage
-
-### Run the agent directly
-```bash
-# Make sure the virtual environment is activated
-source venv/bin/activate
-
-# Run the agent
-python agent.py
-```
-
-### Import in Python
-```python
-import agent
-
-# Access the compiled graph
-graph = agent.graph
-
-# Use the graph
-result = graph.invoke({
-    "messages": [],
-    "tasks": []
-})
-```
-
-## 🔑 Environment Variables
+### 2. Set up environment
 
 Create a `.env` file in the project root:
 ```bash
-# OpenAI API Key
 OPENAI_API_KEY=your_openai_api_key_here
-
-# Optional: LangGraph API Key (for production)
-LANGGRAPH_API_KEY=your_langgraph_api_key_here
 ```
 
-## 🌐 REST API
+### 3. Run the app
 
-Once the server is started, the API is available at:
-- **Interactive documentation**: http://localhost:8123/docs
-- **OpenAPI specification**: http://localhost:8123/openapi.json
-- **Main endpoints**:
-  - `/assistants` - Assistant management
-  - `/threads` - Conversation management
-  - `/runs` - Task execution
-
-## 🚀 Deployment Options
-
-### 1. Local Development
 ```bash
-langgraph dev --config langgraph.json
+python agent.py
 ```
 
-### 2. Docker Deployment
-```bash
-# Generate Dockerfile
-langgraph dockerfile --config langgraph.json
 
-# Build the image
-langgraph build --config langgraph.json
+## How it works
 
-# Run the container
-docker run -p 8123:8123 your-app-name
+The app uses Davia's `@app.graph` decorator to create a LangGraph-based conversational agent:
+
+```python
+from davia import Davia
+
+app = Davia()
+
+@app.graph
+def graph():
+    # LangGraph configuration
+    builder = StateGraph(LifeCoachState)
+    # ... graph setup
+    return builder.compile()
+
+if __name__ == "__main__":
+    app.run()
 ```
 
-### 3. Cloud Deployment
-LangGraph CLI supports deployment on various cloud platforms. Check the LangGraph documentation for specific instructions.
+## Usage
 
-## 🛠️ Troubleshooting
+1. Start the application
+2. The AI will greet you and ask about completed tasks
+3. Add new tasks with or without specific times
+4. The agent will organize your schedule automatically
+5. All times are handled in military format (0000-2359)
 
-### Import errors
-If you see import errors:
-```bash
-# Reinstall dependencies
-pip install -r requirements.txt
+## Project Structure
 
-# Or install missing packages
-pip install python-dotenv langgraph-cli[inmem]
 ```
-
-### Virtual environment issues
-```bash
-# Recreate the virtual environment
-rm -rf venv
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+AIlifecoach/
+├── agent.py                 # Main application
+├── requirements.txt         # Dependencies
+├── langgraph.json          # LangGraph configuration
+└── README.md               # This file
 ```
-
-### LangGraph CLI not found
-```bash
-# Reinstall LangGraph CLI
-pip install --upgrade langgraph-cli[inmem]
-```
-
-## 📚 Additional Resources
-
-- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
-- [LangGraph CLI Guide](https://langchain-ai.github.io/langgraph/how-tos/cli/)
-- [LangChain Documentation](https://python.langchain.com/)
-
-## 🎯 Next Steps
-
-1. Configure your `.env` file with API keys
-2. Test the agent with `python agent.py`
-3. Start the development server with `langgraph dev --config langgraph.json`
-4. Customize the agent logic in `agent.py`
-5. Deploy to production when ready
-
-## ✅ Current Status
-
-- ✅ Virtual environment configured
-- ✅ LangGraph CLI installed and functional
-- ✅ Development server operational
-- ✅ REST API accessible
-- ✅ Interactive documentation available
