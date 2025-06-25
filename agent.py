@@ -16,37 +16,44 @@ load_dotenv()
 
 app = Davia()
 
+
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0.7)
 
-class ScheduleItem(BaseModel):
-    activity: str
-    start_time: int
-    end_time: int
+class Task(BaseModel):
+    name: str
+    timeslot: tuple[int, int]
+    add_or_remove_flag: bool
+
+def custom_reduce(left: List[Task], right: List[Task]) -> List[Task]:
+    for task in right:
+        if task.add_or_remove_flag:
+            left.append(task)
+        else:
+            left = [t for t in left if t.name != task.name or t.timeslot != task.timeslot]
+    return left
+
+
 
 class LifeCoachState(MessagesState):
-    tasks: Annotated[List[str], operator.add]
-    tomorrows_schedule: Annotated[List[ScheduleItem], operator.add]
+    tasks: Annotated[List[Task], custom_reduce]
 
 
 # --- TOOLS ---
 @tool
-def remove_completed_tasks(
-    completed_tasks: List[str],
-    state: Annotated[LifeCoachState, InjectedState],
+def remove_completed_task(
+    task: str,
+    start_time: int,
+    end_time: int,
     tool_call_id: Annotated[str, InjectedToolCallId] = ""
 ) -> Command:
     """Removes all tasks marked as completed from the task list."""
     # Ensure all required state fields exist
-    current_tasks = state.get("tasks", [])
-    before = len(current_tasks)
-    updated_tasks = [t for t in current_tasks if t not in completed_tasks]
-
-    
+    removed_task = Task(name=task, add_or_remove_flag=False, timeslot=(start_time, end_time))
     return Command(update={
-        "tasks": updated_tasks,
+        "tasks": [removed_task],
         "messages": [
             ToolMessage(
-                f"Removed {before - len(updated_tasks)} completed tasks.",
+                f"Removed {task} from the task list.",
                 tool_call_id=tool_call_id
             )
         ]
@@ -55,14 +62,14 @@ def remove_completed_tasks(
 @tool
 def create_new_task(
     task: str,
-    state: Annotated[LifeCoachState, InjectedState],
+    start_time: int,
+    end_time: int,
     tool_call_id: Annotated[str, InjectedToolCallId] = ""
 ) -> Command:
     """Add a new task to the task list."""
-    current_tasks = state.get("tasks", [])
-    current_tasks.append(task)
+    new_task = Task(name=task, add_or_remove_flag=True, timeslot=(start_time, end_time))
     return Command(update={
-        "tasks": current_tasks, 
+        "tasks": [new_task], 
         "messages": [
             ToolMessage(
                 f"Task '{task}' added successfully.",
@@ -71,95 +78,67 @@ def create_new_task(
         ]
     })
 
-@tool
-def clear_tomorrows_schedule(
-    state: Annotated[LifeCoachState, InjectedState],
-    tool_call_id: Annotated[str, InjectedToolCallId] = ""
-) -> Command:
-    """Clear tomorrow's schedule."""
-    return Command(update={
-        "tomorrows_schedule": [],
-        "messages": [
-            ToolMessage(
-                f"Tomorrow's schedule cleared successfully.",
-                tool_call_id=tool_call_id
-            )
-        ]
-    })
 
-@tool
-def add_one_event_to_tomorrows_schedule(
-    activity: str,
-    start_time: int,
-    end_time: int,
-    state: Annotated[LifeCoachState, InjectedState],
-    tool_call_id: Annotated[str, InjectedToolCallId] = ""
-) -> Command:
-    """Update tomorrow's schedule with the new schedule items. for the time format, use the military time format (0000-2359)."""
-    current_schedule = state.get("tomorrows_schedule", [])
-    current_schedule.append(ScheduleItem(activity=activity, start_time=start_time, end_time=end_time))
-    return Command(update={
-        "tomorrows_schedule": current_schedule,
-        "messages": [
-            ToolMessage(
-                f"Tomorrow's schedule updated successfully.",
-                tool_call_id=tool_call_id
-            )
-        ]
-    })
 
 # Liste des tools pour ToolNode
-TOOLS = [remove_completed_tasks, create_new_task, add_one_event_to_tomorrows_schedule, clear_tomorrows_schedule]
+TOOLS = [remove_completed_task, create_new_task]
 
 
 llm_with_tools = llm.bind_tools(TOOLS)
 
-system_prompt = """
-You are a friendly AI Life Coach who conducts daily check-ins with the user. Today is {date} ({weekday}).
+system_prompt = """ You are a friendly AI Life Coach who conducts daily check-ins with the user. Today is {date} ({weekday}).
 
-Your job is to help them reflect on their day, update their task list, and plan for tomorrow. Follow this process step by step:
+Your job is to help them reflect on their day, update their task list, and organize their schedule intelligently. You have two main functions: adding new tasks and removing completed tasks.
+
+**IMPORTANT: Always use military time format (0000 to 2359) for all time specifications.**
+
+Follow this process step by step:
 
 1. **Review Today:**
    - Greet the user warmly and ask what tasks they completed today.
-   - For each task the user says they finished, use the remove_completed_tasks tool to remove it from the list.
+   - For each task the user says they finished, use the remove_completed_task tool to remove it from the list.
    - If the user starts by mentioning tasks they need to do (instead of completed tasks), that's not a problem: skip the completed-tasks step and go straight to adding the mentioned tasks to the task list.
 
-2. **Add New Tasks:**
+2. **Add New Tasks & Organize Schedule:**
    - Ask if there are any new tasks or responsibilities to add to the list.
-   - If the user mentions a new task, you MUST add every single one using the create_new_task tool. If they specify a time (e.g., "at 3pm"), include that time in the task name (e.g., "Call mom at 3pm").
-   - If the user does not mention a time or date for a task, add it to the task list. Then, it is YOUR job as the AI to decide—based on the user's time constraints and the apparent urgency of the task—if it should be scheduled for tomorrow.
+   - If the user mentions a new task, you MUST add every single one using the create_new_task tool.
+   - **Time Slot Management:**
+     - If the user specifies a time slot (e.g., "at 3pm", "from 2-4pm"), NEVER change it. Work around their schedule.
+     - If the user only specifies a starting time (e.g., "at 3pm"), estimate the task duration yourself based on the task type and add an appropriate end time.
+     - If the user doesn't specify any time, YOU must decide when it should be scheduled based on urgency, task type, and available time slots.
+     - NEVER schedule two tasks in the same time slot. If there's a conflict, find the next available time slot.
+     - Consider task priority, duration, and dependencies when scheduling.
+     - **Always convert times to military format (e.g., 3pm = 1500, 2am = 0200, 11:30am = 1130).**
 
-3. **Plan Tomorrow:**
-   - Ask the user about their commitments or availabilities for tomorrow.
-   - Use clear_tomorrows_schedule to clear any previous schedule.
-   - For each activity, commitment, or time block the user mentions, you MUST add ALL of them to tomorrow's schedule using update_tomorrows_schedule.
-   - Then, review the user's current task list and proactively add ALL tasks that are needed for tomorrow to the schedule, even if the user did not mention them.
-   - For tasks that do not have a specific time mentioned, YOU must choose an appropriate time slot for them in the schedule if you determine they should be done tomorrow.
-   - Analyse the current date and check if any previously mentioned tasks are due for tomorrow (for example, if a user said a task is for Sunday and tomorrow is Sunday, add it to the schedule).
-   - Make sure to include ALL tasks and ALL time constraints, commitments, and availabilities the user provides.
+3. **Schedule Organization Rules:**
+   - Always check for time conflicts before adding new tasks.
+   - For tasks without specified times, prioritize urgent tasks and schedule them earlier in the day.
+   - Estimate task duration based on task type (e.g., "Call mom" = 30 minutes, "Write report" = 2 hours, "Exercise" = 1 hour).
+   - If a user-specified time conflicts with existing tasks, find the next available slot and inform the user.
+   - Be proactive about scheduling tasks that are due soon or are important.
 
 **Important Rules:**
 - Always use the appropriate tool for each step. Do not just acknowledge; actually update the state.
 - If the user mentions a new task with a time, always include the time in the task name.
 - Be friendly, supportive, and conversational throughout.
 - Never mention the tools or your internal process to the user.
-- After scheduling tomorrow, encourage the user and wish them a good day or restful night.
+- After organizing the schedule, encourage the user and wish them a good day or restful night.
+- Always maintain a conflict-free schedule by checking existing time slots before adding new tasks.
+- **Use military time format (0000-2359) for all time inputs to the tools.**
+- **If you need to modify a task (change time, name, etc.), first remove it using remove_completed_task, then add the modified version using create_new_task.**
 
 CURRENT STATE:
 - Tasks: {tasks}
-- Tomorrow's Schedule: {tomorrows_schedule}
 """
 
 def assistant(state: LifeCoachState):
     messages = state["messages"]
     tasks = state.get("tasks", [])
-    tomorrows_schedule = state.get("tomorrows_schedule", [])
     now = datetime.now()
     formatted_prompt = system_prompt.format(
         date=now.strftime("%d/%m/%Y"),
         weekday=now.strftime("%A"),
-        tasks=", ".join(tasks),
-        tomorrows_schedule=", ".join(str(item) for item in tomorrows_schedule)
+        tasks=", ".join([task.name for task in tasks if task.add_or_remove_flag])
     )
     response = llm_with_tools.invoke([SystemMessage(content=formatted_prompt)] + messages)
     return {"messages": [response]}
@@ -176,10 +155,8 @@ def graph():
         tools_condition,
     )
     builder.add_edge("tools", "assistant")
-    return builder.compile()
-
+    return builder
 
 
 if __name__ == "__main__":
     app.run()
-
