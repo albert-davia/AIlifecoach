@@ -1,179 +1,178 @@
 # AI Life Coach - LangGraph Agent
 
-Un agent d'intelligence artificielle pour le coaching de vie, construit avec LangGraph et LangChain.
+An artificial intelligence agent for life coaching, built with LangGraph and LangChain.
 
-## 🚀 Configuration Rapide
+## 🚀 Quick Setup
 
-### 1. Activer l'environnement virtuel
+### 1. Activate the virtual environment
 ```bash
-# Option 1: Utiliser le script d'aide
+# Option 1: Use the helper script
 ./activate_env.sh
 
-# Option 2: Activation manuelle
+# Option 2: Manual activation
 source venv/bin/activate
 ```
 
-### 2. Vérifier l'installation
+### 2. Verify installation
 ```bash
-# Tester les imports Python
-python -c "import agent; print('✅ Tous les imports réussis!')"
+# Test Python imports
+python -c "import agent; print('✅ All imports successful!')"
 
-# Vérifier LangGraph CLI
+# Check LangGraph CLI
 langgraph --help
 ```
 
-## 🔧 Utilisation de LangGraph CLI
+## 🔧 Using LangGraph CLI
 
-### Serveur de développement
+### Development server
 ```bash
-# Démarrer le serveur de développement
+# Start the development server
 langgraph dev --config langgraph.json --port 8123 --no-browser
 
-# Accéder à l'interface web
+# Access the web interface
 open http://localhost:8123/docs
 ```
 
-### Autres commandes CLI
+### Other CLI commands
 ```bash
-# Créer un nouveau projet
-langgraph new mon-projet --template new-langgraph-project-python
+# Create a new project
+langgraph new my-project --template new-langgraph-project-python
 
-# Construire une image Docker
+# Build a Docker image
 langgraph build --config langgraph.json
 
-# Générer un Dockerfile
+# Generate a Dockerfile
 langgraph dockerfile --config langgraph.json
 
-# Lancer en production
+# Deploy to production
 langgraph up --config langgraph.json
 ```
 
-## 📁 Structure du Projet
+## 📁 Project Structure
 
 ```
 AIlifecoach/
-├── venv/                    # Environnement virtuel Python
-├── agent.py                 # Agent principal de coaching de vie
-├── requirements.txt         # Dépendances Python
-├── langgraph.json          # Configuration LangGraph CLI
-├── activate_env.sh         # Script d'activation de l'environnement
-└── README.md               # Ce fichier
+├── venv/                    # Python virtual environment
+├── agent.py                 # Main life coaching agent
+├── requirements.txt         # Python dependencies
+├── langgraph.json          # LangGraph CLI configuration
+├── activate_env.sh         # Environment activation script
+└── README.md               # This file
 ```
 
-## 🐍 Utilisation Python
+## 🐍 Python Usage
 
-### Exécuter l'agent directement
+### Run the agent directly
 ```bash
-# S'assurer que l'environnement virtuel est activé
+# Make sure the virtual environment is activated
 source venv/bin/activate
 
-# Exécuter l'agent
+# Run the agent
 python agent.py
 ```
 
-### Importer dans Python
+### Import in Python
 ```python
 import agent
 
-# Accéder au graph compilé
+# Access the compiled graph
 graph = agent.graph
 
-# Utiliser le graph
+# Use the graph
 result = graph.invoke({
     "messages": [],
-    "life_coach_state": {...},
-    "current_date": "2024-01-01"
+    "tasks": []
 })
 ```
 
-## 🔑 Variables d'environnement
+## 🔑 Environment Variables
 
-Créer un fichier `.env` à la racine du projet :
+Create a `.env` file in the project root:
 ```bash
-# Clé API OpenAI
-OPENAI_API_KEY=votre_cle_api_openai_ici
+# OpenAI API Key
+OPENAI_API_KEY=your_openai_api_key_here
 
-# Optionnel: Clé API LangGraph (pour la production)
-LANGGRAPH_API_KEY=votre_cle_api_langgraph_ici
+# Optional: LangGraph API Key (for production)
+LANGGRAPH_API_KEY=your_langgraph_api_key_here
 ```
 
-## 🌐 API REST
+## 🌐 REST API
 
-Une fois le serveur démarré, l'API est disponible sur :
-- **Documentation interactive** : http://localhost:8123/docs
-- **Spécification OpenAPI** : http://localhost:8123/openapi.json
-- **Endpoints principaux** :
-  - `/assistants` - Gestion des assistants
-  - `/threads` - Gestion des conversations
-  - `/runs` - Exécution des tâches
+Once the server is started, the API is available at:
+- **Interactive documentation**: http://localhost:8123/docs
+- **OpenAPI specification**: http://localhost:8123/openapi.json
+- **Main endpoints**:
+  - `/assistants` - Assistant management
+  - `/threads` - Conversation management
+  - `/runs` - Task execution
 
-## 🚀 Options de déploiement
+## 🚀 Deployment Options
 
-### 1. Développement local
+### 1. Local Development
 ```bash
 langgraph dev --config langgraph.json
 ```
 
-### 2. Déploiement Docker
+### 2. Docker Deployment
 ```bash
-# Générer Dockerfile
+# Generate Dockerfile
 langgraph dockerfile --config langgraph.json
 
-# Construire l'image
+# Build the image
 langgraph build --config langgraph.json
 
-# Exécuter le conteneur
-docker run -p 8123:8123 votre-app-name
+# Run the container
+docker run -p 8123:8123 your-app-name
 ```
 
-### 3. Déploiement cloud
-LangGraph CLI supporte le déploiement sur diverses plateformes cloud. Consultez la documentation LangGraph pour les instructions spécifiques.
+### 3. Cloud Deployment
+LangGraph CLI supports deployment on various cloud platforms. Check the LangGraph documentation for specific instructions.
 
-## 🛠️ Dépannage
+## 🛠️ Troubleshooting
 
-### Erreurs d'import
-Si vous voyez des erreurs d'import :
+### Import errors
+If you see import errors:
 ```bash
-# Réinstaller les dépendances
+# Reinstall dependencies
 pip install -r requirements.txt
 
-# Ou installer les packages manquants
+# Or install missing packages
 pip install python-dotenv langgraph-cli[inmem]
 ```
 
-### Problèmes d'environnement virtuel
+### Virtual environment issues
 ```bash
-# Recréer l'environnement virtuel
+# Recreate the virtual environment
 rm -rf venv
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### LangGraph CLI introuvable
+### LangGraph CLI not found
 ```bash
-# Réinstaller LangGraph CLI
+# Reinstall LangGraph CLI
 pip install --upgrade langgraph-cli[inmem]
 ```
 
-## 📚 Ressources additionnelles
+## 📚 Additional Resources
 
-- [Documentation LangGraph](https://langchain-ai.github.io/langgraph/)
-- [Guide LangGraph CLI](https://langchain-ai.github.io/langgraph/how-tos/cli/)
-- [Documentation LangChain](https://python.langchain.com/)
+- [LangGraph Documentation](https://langchain-ai.github.io/langgraph/)
+- [LangGraph CLI Guide](https://langchain-ai.github.io/langgraph/how-tos/cli/)
+- [LangChain Documentation](https://python.langchain.com/)
 
-## 🎯 Prochaines étapes
+## 🎯 Next Steps
 
-1. Configurer votre fichier `.env` avec les clés API
-2. Tester l'agent avec `python agent.py`
-3. Démarrer le serveur de développement avec `langgraph dev --config langgraph.json`
-4. Personnaliser la logique de l'agent dans `agent.py`
-5. Déployer en production quand prêt
+1. Configure your `.env` file with API keys
+2. Test the agent with `python agent.py`
+3. Start the development server with `langgraph dev --config langgraph.json`
+4. Customize the agent logic in `agent.py`
+5. Deploy to production when ready
 
-## ✅ Statut actuel
+## ✅ Current Status
 
-- ✅ Environnement virtuel configuré
-- ✅ LangGraph CLI installé et fonctionnel
-- ✅ Serveur de développement opérationnel
-- ✅ API REST accessible
-- ✅ Documentation interactive disponible
+- ✅ Virtual environment configured
+- ✅ LangGraph CLI installed and functional
+- ✅ Development server operational
+- ✅ REST API accessible
+- ✅ Interactive documentation available
